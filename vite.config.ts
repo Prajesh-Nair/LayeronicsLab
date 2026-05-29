@@ -12,6 +12,13 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // Vercel: Nitro writes `.vercel/output` for zero-config deploys (override with NITRO_PRESET).
-  nitro: { preset: process.env.NITRO_PRESET ?? "vercel" },
+  // Vercel Build Output API expects `.vercel/output` (not dist/client + dist/server).
+  nitro: {
+    preset: process.env.NITRO_PRESET ?? "vercel",
+    output: {
+      dir: ".vercel/output",
+      serverDir: ".vercel/output/functions/__server.func",
+      publicDir: ".vercel/output/static",
+    },
+  },
 });
