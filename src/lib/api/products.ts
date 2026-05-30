@@ -9,21 +9,33 @@ import { products } from "@/db/schema";
 import { DEFAULT_PRODUCT_CATEGORY } from "@/data/categories";
 import { requireAdmin } from "@/lib/auth/admin.server";
 
-const productInput = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  description: z.string(),
-  price: z.number().nonnegative(),
-  image: z.string().min(1),
-  images: z.array(z.string()).optional(),
-  colors: z.array(z.string()).min(1),
-  tag: z.string().optional(),
-  category: z
-    .enum(["sculptures", "customized-print", "useful-items"])
-    .default(DEFAULT_PRODUCT_CATEGORY),
-});
+const productInput = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string(),
+    price: z.number().nonnegative(),
+    image: z.string().min(1),
+    images: z.array(z.string()).optional(),
+    colors: z.array(z.string()).min(1),
+    tag: z.string().optional(),
+    category: z
+      .enum(["sculptures", "customized-print", "useful-items"])
+      .default(DEFAULT_PRODUCT_CATEGORY),
+  })
+  .superRefine((data, ctx) => {
+    const imgs = data.images?.length ? data.images : [data.image];
+    const bytes = imgs.reduce((n, src) => n + src.length, 0);
+    if (bytes > 3_400_000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Images are too large to upload. Use fewer photos or smaller JPG files (under ~3 MB total).",
+      });
+    }
+  });
 
-function dbErrorMessage(err: unknown): never {
+function rethrowDbError(err: unknown): never {
   const msg = err instanceof Error ? err.message : String(err);
   if (/relation .* does not exist|no such table/i.test(msg)) {
     throw new Error(
@@ -33,7 +45,10 @@ function dbErrorMessage(err: unknown): never {
   if (/DATABASE_URL is not set/i.test(msg)) {
     throw err instanceof Error ? err : new Error(msg);
   }
-  throw new Error(`Database error: ${msg}`);
+  if (/connect|ECONNREFUSED|ENOTFOUND|timeout|authentication failed/i.test(msg)) {
+    throw new Error(`Database connection failed. Check DATABASE_URL on Vercel: ${msg}`);
+  }
+  throw err instanceof Error ? err : new Error(msg);
 }
 
 export const listProducts = createServerFn({ method: "GET" }).handler(async () => {
@@ -42,7 +57,7 @@ export const listProducts = createServerFn({ method: "GET" }).handler(async () =
     const rows = await getDb().select().from(products).orderBy(asc(products.createdAt));
     return rows.map(toProduct);
   } catch (err) {
-    dbErrorMessage(err);
+    rethrowDbError(err);
   }
 });
 
@@ -57,7 +72,14 @@ export const getProduct = createServerFn({ method: "GET" })
 export const upsertProduct = createServerFn({ method: "POST" })
   .inputValidator(productInput)
   .handler(async ({ data }) => {
-    await requireAdmin();
+    try {
+      await requireAdmin();
+    } catch (err) {
+      if (err instanceof Response && err.status === 401) {
+        throw new Error("Session expired. Log in to admin again.");
+      }
+      throw err;
+    }
     const images = data.images?.length ? data.images : [data.image];
     const now = new Date();
     const values = {
@@ -86,7 +108,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       if (!row) throw new Error("Failed to save product");
       return toProduct(row);
     } catch (err) {
-      dbErrorMessage(err);
+      rethrowDbError(err);
     }
   });
 

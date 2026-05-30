@@ -9,6 +9,11 @@ import { deleteProduct, upsertProduct } from "@/lib/api/products";
 import type { Product } from "@/components/site/ProductCard";
 import { adminPageTitle } from "@/lib/brand";
 import { DEFAULT_PRODUCT_CATEGORY, PRODUCT_CATEGORIES, getCategoryLabel } from "@/data/categories";
+import {
+  MAX_PRODUCT_IMAGE_BYTES,
+  compressImageToDataUrl,
+  estimateDataUrlBytes,
+} from "@/lib/compress-image";
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: adminPageTitle("Products") }] }),
@@ -40,11 +45,7 @@ function AdminProducts() {
       await queryClient.invalidateQueries({ queryKey: productsQueryKey });
       setEditing(null);
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Could not save product. Check that DATABASE_URL is set on Vercel and redeploy.";
-      throw new Error(message);
+      throw new Error(formatSaveError(err));
     } finally {
       setSaving(false);
     }
@@ -172,19 +173,17 @@ function ProductEditor({
       return;
     }
     setError(null);
-    const newOnes = await Promise.all(
-      jpgs.map(
-        (file) =>
-          new Promise<string>((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(String(r.result));
-            r.onerror = reject;
-            r.readAsDataURL(file);
-          }),
-      ),
-    );
-    const allUrls = [...images.filter((x) => typeof x === "string"), ...newOnes].slice(0, 5);
-    setP({ ...p, image: allUrls[0] ?? "", images: allUrls });
+    try {
+      const newOnes = await Promise.all(jpgs.map((file) => compressImageToDataUrl(file)));
+      const allUrls = [...images.filter((x) => typeof x === "string"), ...newOnes].slice(0, 5);
+      if (estimateDataUrlBytes(allUrls) > MAX_PRODUCT_IMAGE_BYTES) {
+        setError("Images are still too large. Remove a photo or use smaller JPG files.");
+        return;
+      }
+      setP({ ...p, image: allUrls[0] ?? "", images: allUrls });
+    } catch {
+      setError("Could not process one of the images. Try a different JPG.");
+    }
   };
 
   const removeImage = (idx: number) => {
@@ -198,6 +197,11 @@ function ProductEditor({
     const colors = parseColors(colorsInput);
     if (colors.length < 1) {
       return setError("Add at least one color (hex codes, separated by commas).");
+    }
+    if (estimateDataUrlBytes(images) > MAX_PRODUCT_IMAGE_BYTES) {
+      return setError(
+        "Images are too large for the server (Vercel limit). Use fewer or smaller JPGs — they are compressed on upload after you redeploy.",
+      );
     }
     setError(null);
     try {
@@ -238,7 +242,7 @@ function ProductEditor({
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-sm font-semibold">Images (JPG, 1–5)</span>
+              <span className="text-sm font-semibold">Images (JPG, 1–5, auto-compressed)</span>
               <span className="text-xs text-muted-foreground">{images.length}/5</span>
             </div>
             <input
@@ -320,6 +324,14 @@ function ProductEditor({
       </div>
     </div>
   );
+}
+
+function formatSaveError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err && typeof err.message === "string") {
+    return err.message;
+  }
+  return "Could not save product. Large photos often fail on Vercel — use fewer/smaller JPGs and redeploy the latest site.";
 }
 
 function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
