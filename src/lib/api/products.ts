@@ -23,10 +23,27 @@ const productInput = z.object({
     .default(DEFAULT_PRODUCT_CATEGORY),
 });
 
+function dbErrorMessage(err: unknown): never {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/relation .* does not exist|no such table/i.test(msg)) {
+    throw new Error(
+      "Database tables are missing. Set DATABASE_URL on Vercel and redeploy (runs db:push), or run: npm run db:push",
+    );
+  }
+  if (/DATABASE_URL is not set/i.test(msg)) {
+    throw err instanceof Error ? err : new Error(msg);
+  }
+  throw new Error(`Database error: ${msg}`);
+}
+
 export const listProducts = createServerFn({ method: "GET" }).handler(async () => {
-  await ensureProductSeed();
-  const rows = await getDb().select().from(products).orderBy(asc(products.createdAt));
-  return rows.map(toProduct);
+  try {
+    await ensureProductSeed();
+    const rows = await getDb().select().from(products).orderBy(asc(products.createdAt));
+    return rows.map(toProduct);
+  } catch (err) {
+    dbErrorMessage(err);
+  }
 });
 
 export const getProduct = createServerFn({ method: "GET" })
@@ -56,17 +73,21 @@ export const upsertProduct = createServerFn({ method: "POST" })
       updatedAt: now,
     };
 
-    await getDb()
-      .insert(products)
-      .values({ ...values, createdAt: now })
-      .onConflictDoUpdate({
-        target: products.id,
-        set: values,
-      });
+    try {
+      await getDb()
+        .insert(products)
+        .values({ ...values, createdAt: now })
+        .onConflictDoUpdate({
+          target: products.id,
+          set: values,
+        });
 
-    const [row] = await getDb().select().from(products).where(eq(products.id, data.id)).limit(1);
-    if (!row) throw new Error("Failed to save product");
-    return toProduct(row);
+      const [row] = await getDb().select().from(products).where(eq(products.id, data.id)).limit(1);
+      if (!row) throw new Error("Failed to save product");
+      return toProduct(row);
+    } catch (err) {
+      dbErrorMessage(err);
+    }
   });
 
 export const deleteProduct = createServerFn({ method: "POST" })

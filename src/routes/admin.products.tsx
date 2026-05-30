@@ -39,6 +39,12 @@ function AdminProducts() {
       await upsertProduct({ data: { ...p, id } });
       await queryClient.invalidateQueries({ queryKey: productsQueryKey });
       setEditing(null);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Could not save product. Check that DATABASE_URL is set on Vercel and redeploy.";
+      throw new Error(message);
     } finally {
       setSaving(false);
     }
@@ -116,7 +122,15 @@ function AdminProducts() {
         </table>
       </div>
 
-      {editing && <ProductEditor product={editing} saving={saving} onClose={() => setEditing(null)} onSave={save} />}
+      {editing && (
+        <ProductEditor
+          key={editing.id || "new"}
+          product={editing}
+          saving={saving}
+          onClose={() => setEditing(null)}
+          onSave={save}
+        />
+      )}
     </AdminLayout>
   );
 }
@@ -133,8 +147,15 @@ function ProductEditor({
   onSave: (p: Product) => void | Promise<void>;
 }) {
   const [p, setP] = useState<Product>(product);
+  const [colorsInput, setColorsInput] = useState(() => product.colors.join(", "));
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const parseColors = (raw: string) =>
+    raw
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
   const images = p.images && p.images.length > 0 ? p.images : p.image ? [p.image] : [];
 
   const handleFiles = async (files: FileList | null) => {
@@ -171,10 +192,19 @@ function ProductEditor({
     setP({ ...p, image: next[0] ?? "", images: next });
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!p.name.trim()) return setError("Name is required.");
     if (images.length < 1) return setError("Please upload at least 1 image.");
-    void onSave(p);
+    const colors = parseColors(colorsInput);
+    if (colors.length < 1) {
+      return setError("Add at least one color (hex codes, separated by commas).");
+    }
+    setError(null);
+    try {
+      await onSave({ ...p, colors });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save product.");
+    }
   };
 
   return (
@@ -257,26 +287,33 @@ function ProductEditor({
             )}
           </div>
 
-          <Input
-            label="Material colors (comma separated hex)"
-            value={p.colors.join(", ")}
-            onChange={(v) =>
-              setP({
-                ...p,
-                colors: v
-                  .split(",")
-                  .map((c) => c.trim())
-                  .filter(Boolean),
-              })
-            }
-          />
+          <label className="block">
+            <span className="text-sm font-semibold">Material colors (comma-separated hex)</span>
+            <input
+              type="text"
+              value={colorsInput}
+              onChange={(e) => setColorsInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseColors(colorsInput);
+                if (parsed.length > 0) {
+                  setP({ ...p, colors: parsed });
+                  setColorsInput(parsed.join(", "));
+                }
+              }}
+              placeholder="#22C55E, #3B82F6, #111111"
+              className="mt-1.5 w-full h-11 rounded-xl border border-border bg-background px-4 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Example: <span className="font-mono">#22C55E, #FF7A00, #111111</span>
+            </p>
+          </label>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="outline" onClick={onClose} className="rounded-full" disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={submit} className="rounded-full font-semibold" disabled={saving}>
+          <Button onClick={() => void submit()} className="rounded-full font-semibold" disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>
