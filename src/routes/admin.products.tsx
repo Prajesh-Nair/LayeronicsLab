@@ -14,6 +14,8 @@ import {
   compressImageToDataUrl,
   estimateDataUrlBytes,
 } from "@/lib/compress-image";
+import { formatInr, getDiscountPercent } from "@/lib/pricing";
+import { ProductPrice } from "@/components/site/ProductPrice";
 
 export const Route = createFileRoute("/admin/products")({
   head: () => ({ meta: [{ title: adminPageTitle("Products") }] }),
@@ -25,6 +27,7 @@ const blank: Product = {
   name: "",
   description: "",
   price: 0,
+  originalPrice: undefined,
   image: "",
   images: [],
   colors: ["#22C55E"],
@@ -90,7 +93,9 @@ function AdminProducts() {
                   </div>
                 </td>
                 <td className="px-5 py-4 text-muted-foreground hidden md:table-cell max-w-xs truncate">{p.description}</td>
-                <td className="px-5 py-4 font-semibold">₹{p.price}</td>
+                <td className="px-5 py-4">
+                  <ProductPrice price={p.price} originalPrice={p.originalPrice} size="sm" align="left" />
+                </td>
                 <td className="px-5 py-4 hidden lg:table-cell text-muted-foreground">{getCategoryLabel(p.category)}</td>
                 <td className="px-5 py-4 hidden md:table-cell">
                   <div className="flex gap-1">
@@ -198,6 +203,9 @@ function ProductEditor({
     if (colors.length < 1) {
       return setError("Add at least one color (hex codes, separated by commas).");
     }
+    if (p.originalPrice != null && p.originalPrice > 0 && p.originalPrice <= p.price) {
+      return setError("Original price must be higher than the selling price.");
+    }
     if (estimateDataUrlBytes(images) > MAX_PRODUCT_IMAGE_BYTES) {
       return setError(
         "Images are too large for the server (Vercel limit). Use fewer or smaller JPGs — they are compressed on upload after you redeploy.",
@@ -223,7 +231,29 @@ function ProductEditor({
         <div className="space-y-4">
           <Input label="Name" value={p.name} onChange={(v) => setP({ ...p, name: v })} />
           <Input label="Description" value={p.description} onChange={(v) => setP({ ...p, description: v })} />
-          <Input label="Price (INR)" type="number" value={String(p.price)} onChange={(v) => setP({ ...p, price: Number(v) || 0 })} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Selling price (INR)"
+              type="number"
+              value={String(p.price)}
+              onChange={(v) => setP({ ...p, price: Number(v) || 0 })}
+            />
+            <Input
+              label="Original price / MRP (optional)"
+              type="number"
+              value={p.originalPrice != null && p.originalPrice > 0 ? String(p.originalPrice) : ""}
+              onChange={(v) => {
+                const n = Number(v);
+                setP({ ...p, originalPrice: v.trim() === "" || !n ? undefined : n });
+              }}
+            />
+          </div>
+          {getDiscountPercent(p.price, p.originalPrice) != null && (
+            <p className="text-xs text-[var(--color-accent-orange)] font-semibold -mt-2">
+              {getDiscountPercent(p.price, p.originalPrice)}% off — customers see {formatInr(p.originalPrice!)} struck
+              through and {formatInr(p.price)} as the price
+            </p>
+          )}
 
           <label className="block">
             <span className="text-sm font-semibold">Category</span>

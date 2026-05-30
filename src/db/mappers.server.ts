@@ -32,6 +32,7 @@ export function toProduct(row: DbProduct): Product {
     name: row.name,
     description: row.description,
     price: row.price,
+    originalPrice: row.originalPrice ?? undefined,
     image: row.image,
     images,
     colors: row.colors,

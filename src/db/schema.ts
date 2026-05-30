@@ -5,6 +5,8 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   price: real("price").notNull(),
+  /** MRP / list price — shown struck through when greater than `price`. */
+  originalPrice: real("original_price"),
   image: text("image").notNull(),
   images: jsonb("images").$type<string[]>().notNull().default([]),
   colors: jsonb("colors").$type<string[]>().notNull(),

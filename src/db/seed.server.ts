@@ -31,6 +31,7 @@ export async function ensureProductSeed() {
       name: p.name,
       description: p.description,
       price: p.price,
+      originalPrice: p.originalPrice ?? null,
       image: p.image,
       images: p.images?.length ? p.images : p.image ? [p.image] : [],
       colors: p.colors,

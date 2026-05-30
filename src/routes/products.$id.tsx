@@ -5,6 +5,8 @@ import { ArrowLeft, ShoppingCart, Truck, ShieldCheck, Layers, Minus, Plus } from
 import { Button } from "@/components/ui/button";
 import { SiteShell } from "@/components/site/SiteShell";
 import { ProductCard } from "@/components/site/ProductCard";
+import { ProductDiscountBadge } from "@/components/site/ProductDiscountBadge";
+import { ProductPrice } from "@/components/site/ProductPrice";
 import { useProducts } from "@/hooks/use-products";
 import { getProduct } from "@/lib/api/products";
 import { useCart } from "@/store/cart";
@@ -63,6 +65,11 @@ function ProductDetail() {
       <section className="mx-auto max-w-[1400px] px-4 sm:px-10 pb-16 grid lg:grid-cols-2 gap-10 lg:gap-16">
         <div className="space-y-4">
           <div className="relative rounded-[32px] overflow-hidden bg-[var(--color-surface)] aspect-square shadow-card">
+            <ProductDiscountBadge
+              price={product.price}
+              originalPrice={product.originalPrice}
+              className="top-4 right-4 text-xs"
+            />
             <img src={gallery[activeImg]} alt={product.name} className="w-full h-full object-cover" width={1024} height={1024} />
           </div>
           <div className="grid grid-cols-4 gap-3">
@@ -86,7 +93,7 @@ function ProductDetail() {
             <h1 className="text-3xl sm:text-5xl font-bold tracking-tight">{product.name}</h1>
             <p className="text-muted-foreground mt-3 text-base">{product.description}</p>
           </div>
-          <div className="text-4xl font-bold">₹{product.price}</div>
+          <ProductPrice price={product.price} originalPrice={product.originalPrice} size="lg" align="left" />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">

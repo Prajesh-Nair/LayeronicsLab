@@ -15,6 +15,7 @@ const productInput = z
     name: z.string().min(1),
     description: z.string(),
     price: z.number().nonnegative(),
+    originalPrice: z.number().positive().nullable().optional(),
     image: z.string().min(1),
     images: z.array(z.string()).optional(),
     colors: z.array(z.string()).min(1),
@@ -31,6 +32,13 @@ const productInput = z
         code: z.ZodIssueCode.custom,
         message:
           "Images are too large to upload. Use fewer photos or smaller JPG files (under ~3 MB total).",
+      });
+    }
+    if (data.originalPrice != null && data.originalPrice <= data.price) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["originalPrice"],
+        message: "Original price must be higher than the selling price to show a discount.",
       });
     }
   });
@@ -87,6 +95,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
       name: data.name,
       description: data.description,
       price: data.price,
+      originalPrice: data.originalPrice ?? null,
       image: data.image,
       images,
       colors: data.colors,

@@ -2,6 +2,8 @@ import { ShoppingCart, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
+import { ProductDiscountBadge } from "@/components/site/ProductDiscountBadge";
+import { ProductPrice } from "@/components/site/ProductPrice";
 
 import type { ProductCategoryId } from "@/data/categories";
 
@@ -9,7 +11,10 @@ export type Product = {
   id: string;
   name: string;
   description: string;
+  /** Selling price (what the customer pays). */
   price: number;
+  /** MRP / list price — optional, shown struck through when higher than `price`. */
+  originalPrice?: number | null;
   image: string;
   images?: string[];
   colors: string[];
@@ -27,6 +32,7 @@ export function ProductCard({ product }: { product: Product }) {
             {product.tag}
           </span>
         )}
+        <ProductDiscountBadge price={product.price} originalPrice={product.originalPrice} />
         <img
           src={product.image}
           alt={product.name}
@@ -43,9 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
             <h3 className="text-lg font-semibold text-foreground leading-tight">{product.name}</h3>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{product.description}</p>
           </div>
-          <div className="text-right">
-            <div className="text-lg font-bold text-foreground">₹{product.price}</div>
-          </div>
+          <ProductPrice price={product.price} originalPrice={product.originalPrice} size="md" align="right" />
         </div>
 
         <div className="flex items-center gap-1.5">
