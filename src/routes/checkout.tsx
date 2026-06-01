@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SiteShell } from "@/components/site/SiteShell";
 import { useCart } from "@/store/cart";
 import { createOrder } from "@/lib/api/orders";
-import { sanitizeOrderItemImage } from "@/lib/order-images";
+import { sanitizeOrderItemImageForRequest } from "@/lib/order-images";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -47,7 +47,7 @@ function Checkout() {
             productId: i.productId,
             name: i.name,
             price: i.price,
-            image: sanitizeOrderItemImage(i.image),
+            image: sanitizeOrderItemImageForRequest(i.image),
             color: i.color,
             quantity: i.quantity,
           })),

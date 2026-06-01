@@ -1,12 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/db/client.server";
 import { type OrderStatus, toOrder } from "@/db/mappers.server";
-import { orderItems, orders } from "@/db/schema";
+import { orderItems, orders, products } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/admin.server";
-import { sanitizeOrderItemImage } from "@/lib/order-images";
+import {
+  enrichOrderItemImage,
+  resolveOrderItemImage,
+} from "@/lib/order-images";
 
 function rethrowOrderError(err: unknown): never {
   const msg = err instanceof Error ? err.message : String(err);
@@ -22,6 +25,16 @@ function rethrowOrderError(err: unknown): never {
     throw new Error(`Could not reach the database. Check DATABASE_URL on Vercel: ${msg}`);
   }
   throw err instanceof Error ? err : new Error(msg);
+}
+
+async function loadProductImagesById(db: ReturnType<typeof getDb>, productIds: string[]) {
+  const unique = [...new Set(productIds.filter((id) => id && id !== "custom"))];
+  if (unique.length === 0) return new Map<string, string>();
+  const rows = await db
+    .select({ id: products.id, image: products.image })
+    .from(products)
+    .where(inArray(products.id, unique));
+  return new Map(rows.map((r) => [r.id, r.image]));
 }
 
 const orderStatusSchema = z.enum(["new", "contacted", "printing", "shipped", "done"]);
@@ -59,6 +72,11 @@ export const createOrder = createServerFn({ method: "POST" })
         status: "new",
       });
 
+      const catalogImages = await loadProductImagesById(
+        db,
+        data.items.map((item) => item.productId),
+      );
+
       await db.insert(orderItems).values(
         data.items.map((item, index) => ({
           id: `${id}-${index}`,
@@ -66,7 +84,11 @@ export const createOrder = createServerFn({ method: "POST" })
           productId: item.productId,
           name: item.name,
           price: item.price,
-          image: sanitizeOrderItemImage(item.image),
+          image: resolveOrderItemImage(
+            item.productId,
+            item.image,
+            catalogImages.get(item.productId),
+          ),
           color: item.color,
           quantity: item.quantity,
         })),
@@ -85,10 +107,17 @@ export const listOrders = createServerFn({ method: "GET" }).handler(async () => 
   if (orderRows.length === 0) return [];
 
   const itemRows = await db.select().from(orderItems);
+  const catalogImages = await loadProductImagesById(
+    db,
+    itemRows.map((item) => item.productId),
+  );
   const itemsByOrder = new Map<string, typeof itemRows>();
   for (const item of itemRows) {
     const list = itemsByOrder.get(item.orderId) ?? [];
-    list.push(item);
+    list.push({
+      ...item,
+      image: enrichOrderItemImage(item.image, item.productId, catalogImages),
+    });
     itemsByOrder.set(item.orderId, list);
   }
 
@@ -123,10 +152,17 @@ export const trackOrdersByEmail = createServerFn({ method: "POST" })
     const ids = orderRows.map((o) => o.id);
     const itemRows = await db.select().from(orderItems);
     const filteredItems = itemRows.filter((i) => ids.includes(i.orderId));
+    const catalogImages = await loadProductImagesById(
+      db,
+      filteredItems.map((item) => item.productId),
+    );
     const itemsByOrder = new Map<string, typeof filteredItems>();
     for (const item of filteredItems) {
       const list = itemsByOrder.get(item.orderId) ?? [];
-      list.push(item);
+      list.push({
+        ...item,
+        image: enrichOrderItemImage(item.image, item.productId, catalogImages),
+      });
       itemsByOrder.set(item.orderId, list);
     }
 
