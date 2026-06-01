@@ -38,6 +38,8 @@ export function toProduct(row: DbProduct): Product {
     images,
     colors: row.colors,
     tag: row.tag ?? undefined,
+    dimensions: row.dimensions ?? undefined,
+    weight: row.weight ?? undefined,
     category: isProductCategoryId(row.category) ? row.category : DEFAULT_PRODUCT_CATEGORY,
   };
 }

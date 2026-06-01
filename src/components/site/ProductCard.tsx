@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { ShoppingCart, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart";
+import { ProductColorPicker } from "@/components/site/ProductColorPicker";
 import { ProductDiscountBadge } from "@/components/site/ProductDiscountBadge";
 import { ProductPrice } from "@/components/site/ProductPrice";
 
@@ -19,11 +21,21 @@ export type Product = {
   images?: string[];
   colors: string[];
   tag?: string;
+  /** e.g. "12 × 10 × 8 cm" */
+  dimensions?: string | null;
+  /** e.g. "85 g" */
+  weight?: string | null;
   category: ProductCategoryId;
 };
 
 export function ProductCard({ product }: { product: Product }) {
   const addItem = useCart((s) => s.addItem);
+  const [color, setColor] = useState(product.colors[0] ?? "#000");
+
+  useEffect(() => {
+    setColor(product.colors[0] ?? "#000");
+  }, [product.id, product.colors]);
+
   return (
     <article className="group bg-card rounded-3xl p-4 shadow-card hover:shadow-float hover:-translate-y-1 transition-smooth">
       <Link to="/products/$id" params={{ id: product.id }} className="relative block rounded-2xl overflow-hidden bg-[var(--color-surface)] aspect-square">
@@ -52,18 +64,12 @@ export function ProductCard({ product }: { product: Product }) {
           <ProductPrice price={product.price} originalPrice={product.originalPrice} size="md" align="right" />
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {product.colors.slice(0, 5).map((c) => (
-            <span
-              key={c}
-              className="w-4 h-4 rounded-full border border-border"
-              style={{ background: c }}
-              aria-label={`Color ${c}`}
-            />
-          ))}
-          {product.colors.length > 5 && (
-            <span className="text-xs text-muted-foreground ml-1">+{product.colors.length - 5}</span>
-          )}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-muted-foreground">Color</span>
+            <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px]">{color}</span>
+          </div>
+          <ProductColorPicker colors={product.colors} value={color} onChange={setColor} size="sm" />
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -76,7 +82,7 @@ export function ProductCard({ product }: { product: Product }) {
                 name: product.name,
                 price: product.price,
                 image: product.image,
-                color: product.colors[0],
+                color,
               })
             }
           >

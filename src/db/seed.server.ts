@@ -36,6 +36,8 @@ export async function ensureProductSeed() {
       images: p.images?.length ? p.images : p.image ? [p.image] : [],
       colors: p.colors,
       tag: p.tag ?? null,
+      dimensions: p.dimensions?.trim() || null,
+      weight: p.weight?.trim() || null,
       category: p.category,
     })),
   );

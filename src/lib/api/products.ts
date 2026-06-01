@@ -20,6 +20,8 @@ const productInput = z
     images: z.array(z.string()).optional(),
     colors: z.array(z.string()).min(1),
     tag: z.string().optional(),
+    dimensions: z.string().optional(),
+    weight: z.string().optional(),
     category: z
       .enum(["sculptures", "customized-print", "useful-items"])
       .default(DEFAULT_PRODUCT_CATEGORY),
@@ -100,6 +102,8 @@ export const upsertProduct = createServerFn({ method: "POST" })
       images,
       colors: data.colors,
       tag: data.tag ?? null,
+      dimensions: data.dimensions?.trim() || null,
+      weight: data.weight?.trim() || null,
       category: data.category,
       updatedAt: now,
     };

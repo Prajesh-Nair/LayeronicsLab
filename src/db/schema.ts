@@ -11,6 +11,10 @@ export const products = pgTable("products", {
   images: jsonb("images").$type<string[]>().notNull().default([]),
   colors: jsonb("colors").$type<string[]>().notNull(),
   tag: text("tag"),
+  /** e.g. "12 × 10 × 8 cm" */
+  dimensions: text("dimensions"),
+  /** e.g. "85 g" */
+  weight: text("weight"),
   category: text("category").notNull().default("useful-items"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { pageTitle } from "@/lib/brand";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, ShoppingCart, Truck, ShieldCheck, Layers, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteShell } from "@/components/site/SiteShell";
 import { ProductCard } from "@/components/site/ProductCard";
+import { ProductColorPicker } from "@/components/site/ProductColorPicker";
 import { ProductDiscountBadge } from "@/components/site/ProductDiscountBadge";
 import { ProductPrice } from "@/components/site/ProductPrice";
+import { ProductSpecs } from "@/components/site/ProductSpecs";
 import { useProducts } from "@/hooks/use-products";
 import { getProduct } from "@/lib/api/products";
 import { useCart } from "@/store/cart";
@@ -36,6 +38,10 @@ function ProductDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const addItem = useCart((s) => s.addItem);
+
+  useEffect(() => {
+    if (product?.colors?.[0]) setColor(product.colors[0]);
+  }, [product?.id, product?.colors]);
 
   if (!product) {
     return (
@@ -95,24 +101,14 @@ function ProductDetail() {
           </div>
           <ProductPrice price={product.price} originalPrice={product.originalPrice} size="lg" align="left" />
 
+          <ProductSpecs dimensions={product.dimensions} weight={product.weight} />
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">Print color</span>
-              <span className="text-xs text-muted-foreground">{color}</span>
+              <span className="text-xs text-muted-foreground font-mono">{color}</span>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {product.colors.map((c: string) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  aria-label={`Color ${c}`}
-                  className={`w-[42px] h-[42px] rounded-full border-2 transition-smooth ${
-                    color === c ? "border-primary scale-105 shadow-card" : "border-border hover:scale-105"
-                  }`}
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
+            <ProductColorPicker colors={product.colors} value={color} onChange={setColor} size="md" />
           </div>
 
           <div className="flex items-center gap-4">

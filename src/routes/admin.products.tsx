@@ -31,6 +31,8 @@ const blank: Product = {
   image: "",
   images: [],
   colors: ["#22C55E"],
+  dimensions: "",
+  weight: "",
   category: DEFAULT_PRODUCT_CATEGORY,
 };
 
@@ -254,6 +256,21 @@ function ProductEditor({
               through and {formatInr(p.price)} as the price
             </p>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Dimensions (optional)"
+              value={p.dimensions ?? ""}
+              onChange={(v) => setP({ ...p, dimensions: v })}
+              placeholder="12 × 10 × 8 cm"
+            />
+            <Input
+              label="Weight (optional)"
+              value={p.weight ?? ""}
+              onChange={(v) => setP({ ...p, weight: v })}
+              placeholder="85 g"
+            />
+          </div>
 
           <label className="block">
             <span className="text-sm font-semibold">Category</span>
