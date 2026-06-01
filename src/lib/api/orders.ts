@@ -6,6 +6,23 @@ import { getDb } from "@/db/client.server";
 import { type OrderStatus, toOrder } from "@/db/mappers.server";
 import { orderItems, orders } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/admin.server";
+import { sanitizeOrderItemImage } from "@/lib/order-images";
+
+function rethrowOrderError(err: unknown): never {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/relation .* does not exist|no such table/i.test(msg)) {
+    throw new Error(
+      "Order tables are missing. Run npm run db:push against your production database, then redeploy.",
+    );
+  }
+  if (/DATABASE_URL is not set/i.test(msg)) {
+    throw err instanceof Error ? err : new Error(msg);
+  }
+  if (/connect|ECONNREFUSED|ENOTFOUND|timeout|authentication failed/i.test(msg)) {
+    throw new Error(`Could not reach the database. Check DATABASE_URL on Vercel: ${msg}`);
+  }
+  throw err instanceof Error ? err : new Error(msg);
+}
 
 const orderStatusSchema = z.enum(["new", "contacted", "printing", "shipped", "done"]);
 
@@ -29,32 +46,36 @@ export const createOrder = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const id = `ORD-${Date.now().toString(36).toUpperCase()}`;
-    const db = getDb();
+    try {
+      const id = `ORD-${Date.now().toString(36).toUpperCase()}`;
+      const db = getDb();
 
-    await db.insert(orders).values({
-      id,
-      email: data.email.toLowerCase(),
-      phone: data.phone,
-      notes: data.notes ?? "",
-      total: data.total,
-      status: "new",
-    });
+      await db.insert(orders).values({
+        id,
+        email: data.email.toLowerCase(),
+        phone: data.phone,
+        notes: data.notes ?? "",
+        total: data.total,
+        status: "new",
+      });
 
-    await db.insert(orderItems).values(
-      data.items.map((item, index) => ({
-        id: `${id}-${index}`,
-        orderId: id,
-        productId: item.productId,
-        name: item.name,
-        price: item.price,
-        image: item.image,
-        color: item.color,
-        quantity: item.quantity,
-      })),
-    );
+      await db.insert(orderItems).values(
+        data.items.map((item, index) => ({
+          id: `${id}-${index}`,
+          orderId: id,
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          image: sanitizeOrderItemImage(item.image),
+          color: item.color,
+          quantity: item.quantity,
+        })),
+      );
 
-    return { id };
+      return { id };
+    } catch (err) {
+      rethrowOrderError(err);
+    }
   });
 
 export const listOrders = createServerFn({ method: "GET" }).handler(async () => {

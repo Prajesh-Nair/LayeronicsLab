@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SiteShell } from "@/components/site/SiteShell";
 import { useCart } from "@/store/cart";
 import { createOrder } from "@/lib/api/orders";
+import { sanitizeOrderItemImage } from "@/lib/order-images";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -46,7 +47,7 @@ function Checkout() {
             productId: i.productId,
             name: i.name,
             price: i.price,
-            image: i.image,
+            image: sanitizeOrderItemImage(i.image),
             color: i.color,
             quantity: i.quantity,
           })),
@@ -54,8 +55,8 @@ function Checkout() {
       });
       clear();
       navigate({ to: "/order-success", search: { id: result.id } });
-    } catch {
-      setError("Could not place your order. Please try again in a moment.");
+    } catch (err) {
+      setError(formatCheckoutError(err));
       setSubmitting(false);
     }
   };
@@ -157,6 +158,14 @@ function Checkout() {
       </div>
     </SiteShell>
   );
+}
+
+function formatCheckoutError(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err && typeof err.message === "string") {
+    return err.message;
+  }
+  return "Could not place your order. Check your connection and try again.";
 }
 
 function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
