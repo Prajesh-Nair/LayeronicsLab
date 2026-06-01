@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { pageTitle } from "@/lib/brand";
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock, MessageCircle, Truck } from "lucide-react";
+import { BRAND_EMAIL, BRAND_LEGAL } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { SiteShell } from "@/components/site/SiteShell";
 import { useCart } from "@/store/cart";
@@ -23,6 +24,7 @@ function Checkout() {
   const { items, subtotal, clear } = useCart();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [pincode, setPincode] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +35,10 @@ function Checkout() {
       setError("Please enter a valid phone number (10+ digits, optional + prefix)");
       return;
     }
+    if (!/^\d{6}$/.test(pincode)) {
+      setError("Please enter a valid 6-digit delivery pincode");
+      return;
+    }
     setError("");
     setSubmitting(true);
 
@@ -41,6 +47,7 @@ function Checkout() {
         data: {
           email,
           phone,
+          pincode,
           notes,
           total: subtotal(),
           items: items.map((i) => ({
@@ -71,7 +78,28 @@ function Checkout() {
         <div className="grid lg:grid-cols-[1fr_400px] gap-10">
           <div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Checkout</h1>
-            <p className="text-muted-foreground mt-2">No payment in V1 — share your details and we'll reach out to confirm your order.</p>
+            <p className="text-muted-foreground mt-2">
+              No online payment yet — submit your order and {BRAND_LEGAL} will confirm with you directly.
+            </p>
+
+            <div className="mt-6 rounded-2xl border border-border bg-[var(--color-surface)] p-5 space-y-3 text-sm text-muted-foreground">
+              <div className="flex gap-3">
+                <MessageCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden />
+                <p>
+                  After you place your order, we will contact you on <strong className="text-foreground">WhatsApp</strong> at
+                  the phone number below and by <strong className="text-foreground">email</strong> at the address you provide
+                  to confirm your order and share next steps.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Truck className="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden />
+                <p>
+                  <strong className="text-foreground">Delivery charges depend on your location.</strong> We use your pincode
+                  to estimate shipping. The final amount (including delivery) will be shared with you on WhatsApp and email
+                  before we print and ship.
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={submit} className="mt-8 space-y-5">
               <Field label="Email address" required>
@@ -94,6 +122,20 @@ function Checkout() {
                   placeholder="+91 98XXXXXXXX"
                   disabled={submitting}
                   className="w-full h-14 rounded-2xl border border-border bg-background px-5 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth disabled:opacity-60"
+                />
+              </Field>
+              <Field label="Delivery pincode" required hint="6-digit Indian PIN">
+                <input
+                  required
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="110001"
+                  disabled={submitting}
+                  className="w-full h-14 rounded-2xl border border-border bg-background px-5 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth disabled:opacity-60 tracking-widest font-mono"
                 />
               </Field>
               <Field label="Notes / custom requests" hint="Optional">
@@ -145,10 +187,17 @@ function Checkout() {
               <span>Subtotal</span>
               <span>₹{subtotal().toFixed(2)}</span>
             </div>
-            <div className="flex items-center justify-between text-sm text-muted-foreground mt-1">
-              <span>Shipping</span>
-              <span>Calculated after confirmation</span>
+            <div className="flex items-center justify-between text-sm text-muted-foreground mt-1 gap-4">
+              <span>Delivery</span>
+              <span className="text-right">Based on pincode — confirmed on WhatsApp &amp; email</span>
             </div>
+            <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+              Questions? Reach us at{" "}
+              <a href={`mailto:${BRAND_EMAIL}`} className="text-primary font-medium hover:underline">
+                {BRAND_EMAIL}
+              </a>
+              .
+            </p>
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
               <span className="font-semibold">Total</span>
               <span className="text-xl font-bold">₹{subtotal().toFixed(2)}</span>

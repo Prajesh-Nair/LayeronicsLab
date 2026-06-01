@@ -53,6 +53,7 @@ export const createOrder = createServerFn({ method: "POST" })
     z.object({
       email: z.string().email(),
       phone: z.string().min(10),
+      pincode: z.string().regex(/^\d{6}$/, "Enter a valid 6-digit delivery pincode"),
       notes: z.string().optional(),
       items: z.array(cartItemSchema).min(1),
       total: z.number().nonnegative(),
@@ -67,6 +68,7 @@ export const createOrder = createServerFn({ method: "POST" })
         id,
         email: data.email.toLowerCase(),
         phone: data.phone,
+        pincode: data.pincode,
         notes: data.notes ?? "",
         total: data.total,
         status: "new",

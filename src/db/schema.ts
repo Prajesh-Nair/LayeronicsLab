@@ -20,6 +20,7 @@ export const orders = pgTable("orders", {
   id: text("id").primaryKey(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
+  pincode: text("pincode"),
   notes: text("notes").notNull().default(""),
   total: real("total").notNull(),
   status: text("status").notNull().default("new"),

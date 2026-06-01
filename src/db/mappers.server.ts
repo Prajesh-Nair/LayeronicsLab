@@ -18,6 +18,7 @@ export type Order = {
   id: string;
   email: string;
   phone: string;
+  pincode: string;
   notes: string;
   items: OrderItem[];
   total: number;
@@ -46,6 +47,7 @@ export function toOrder(row: DbOrder, items: DbOrderItem[]): Order {
     id: row.id,
     email: row.email,
     phone: row.phone,
+    pincode: row.pincode ?? "",
     notes: row.notes,
     total: row.total,
     createdAt: row.createdAt.toISOString(),

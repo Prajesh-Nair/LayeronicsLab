@@ -24,7 +24,8 @@ function OrderSuccess() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Thank you!</h1>
         <p className="text-muted-foreground mt-3">
-          Your order has been received. We'll contact you soon to confirm the details.
+          Your order has been received. We will message you on WhatsApp and email you shortly to confirm your order,
+          including delivery charges for your pincode.
         </p>
         {id && (
           <div className="mt-6 inline-flex px-4 py-2 rounded-full bg-[var(--color-surface)] text-sm font-mono">

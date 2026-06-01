@@ -70,6 +70,7 @@ function AdminOrders() {
                   <td className="px-5 py-4">
                     <div className="font-medium">{o.email}</div>
                     <div className="text-xs text-muted-foreground">{o.phone}</div>
+                    {o.pincode && <div className="text-xs text-muted-foreground font-mono">PIN {o.pincode}</div>}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex -space-x-2">
@@ -126,6 +127,10 @@ function AdminOrders() {
                 <div>
                   <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Phone</div>
                   <div className="font-medium">{selected.phone || "—"}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Pincode</div>
+                  <div className="font-medium font-mono">{selected.pincode || "—"}</div>
                 </div>
                 {selected.notes && (
                   <div className="col-span-2">
