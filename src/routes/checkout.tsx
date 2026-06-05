@@ -56,6 +56,7 @@ function Checkout() {
             price: i.price,
             image: sanitizeOrderItemImageForRequest(i.image),
             color: i.color,
+            personalizationText: i.personalizationText,
             quantity: i.quantity,
           })),
         },
@@ -177,6 +178,11 @@ function Checkout() {
                       <span className="w-2.5 h-2.5 rounded-full border border-border" style={{ background: i.color }} />
                       × {i.quantity}
                     </div>
+                    {i.personalizationText && (
+                      <div className="text-xs text-foreground mt-0.5 truncate" title={i.personalizationText}>
+                        Text: {i.personalizationText}
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm font-semibold">₹{(i.price * i.quantity).toFixed(2)}</div>
                 </div>

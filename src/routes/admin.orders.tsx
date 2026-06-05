@@ -156,6 +156,11 @@ function AdminOrders() {
                           <span>·</span>
                           <span>Qty {i.quantity}</span>
                         </div>
+                        {i.personalizationText && (
+                          <div className="text-xs text-foreground mt-0.5">
+                            Personalization: <span className="font-medium">{i.personalizationText}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="text-sm font-semibold">₹{(i.price * i.quantity).toFixed(2)}</div>
                     </li>

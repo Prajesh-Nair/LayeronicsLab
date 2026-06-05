@@ -37,11 +37,16 @@ function ProductDetail() {
   const [color, setColor] = useState(product?.colors?.[0] ?? "#000");
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
+  const [personalizationText, setPersonalizationText] = useState("");
   const addItem = useCart((s) => s.addItem);
+  const requiresPersonalization = Boolean(product?.personalizationPrompt?.trim());
 
   useEffect(() => {
     if (product?.colors?.[0]) setColor(product.colors[0]);
+    setPersonalizationText("");
   }, [product?.id, product?.colors]);
+
+  const canAdd = !requiresPersonalization || personalizationText.trim().length > 0;
 
   if (!product) {
     return (
@@ -77,6 +82,14 @@ function ProductDetail() {
               className="top-4 right-4 text-xs"
             />
             <img src={gallery[activeImg]} alt={product.name} className="w-full h-full object-cover" width={1024} height={1024} />
+            {product.gif && (
+              <img
+                src={product.gif}
+                alt=""
+                aria-hidden
+                className="absolute bottom-4 right-4 z-10 w-20 h-20 rounded-2xl border-2 border-card/90 shadow-glass object-cover bg-card/80 backdrop-blur"
+              />
+            )}
           </div>
           <div className="grid grid-cols-4 gap-3">
             {gallery.map((img: string, i: number) => (
@@ -111,6 +124,24 @@ function ProductDetail() {
             <ProductColorPicker colors={product.colors} value={color} onChange={setColor} size="md" />
           </div>
 
+          {requiresPersonalization && (
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold">
+                {product.personalizationPrompt}
+                <span className="text-primary"> *</span>
+              </span>
+              <input
+                type="text"
+                value={personalizationText}
+                onChange={(e) => setPersonalizationText(e.target.value)}
+                placeholder="Enter your text"
+                maxLength={80}
+                className="w-full h-12 rounded-2xl border border-border bg-background px-5 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth"
+              />
+              <p className="text-xs text-muted-foreground">Required for customized prints before adding to cart.</p>
+            </label>
+          )}
+
           <div className="flex items-center gap-4">
             <div className="inline-flex items-center rounded-full border border-border bg-background">
               <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-11 h-11 grid place-items-center" aria-label="Decrease">
@@ -124,6 +155,7 @@ function ProductDetail() {
             <Button
               size="lg"
               className="flex-1 h-12 rounded-full font-semibold shadow-float hover:-translate-y-0.5 transition-smooth"
+              disabled={!canAdd}
               onClick={() =>
                 addItem({
                   productId: product.id,
@@ -131,6 +163,9 @@ function ProductDetail() {
                   price: product.price,
                   image: product.image,
                   color,
+                  personalizationText: requiresPersonalization
+                    ? personalizationText.trim()
+                    : undefined,
                   quantity: qty,
                 })
               }

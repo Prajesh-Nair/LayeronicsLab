@@ -15,6 +15,10 @@ export const products = pgTable("products", {
   dimensions: text("dimensions"),
   /** e.g. "85 g" */
   weight: text("weight"),
+  /** Optional small animated preview (data URL). */
+  gif: text("gif"),
+  /** When set, customers must enter text before adding to cart (customized prints). */
+  personalizationPrompt: text("personalization_prompt"),
   category: text("category").notNull().default("useful-items"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -41,6 +45,7 @@ export const orderItems = pgTable("order_items", {
   price: real("price").notNull(),
   image: text("image").notNull(),
   color: text("color").notNull(),
+  personalizationText: text("personalization_text"),
   quantity: integer("quantity").notNull(),
 });
 

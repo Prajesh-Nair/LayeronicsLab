@@ -22,18 +22,20 @@ const productInput = z
     tag: z.string().optional(),
     dimensions: z.string().optional(),
     weight: z.string().optional(),
+    gif: z.string().optional(),
+    personalizationPrompt: z.string().optional(),
     category: z
       .enum(["sculptures", "customized-print", "useful-items"])
       .default(DEFAULT_PRODUCT_CATEGORY),
   })
   .superRefine((data, ctx) => {
     const imgs = data.images?.length ? data.images : [data.image];
-    const bytes = imgs.reduce((n, src) => n + src.length, 0);
+    const bytes = imgs.reduce((n, src) => n + src.length, 0) + (data.gif?.length ?? 0);
     if (bytes > 3_400_000) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
-          "Images are too large to upload. Use fewer photos or smaller JPG files (under ~3 MB total).",
+          "Images are too large to upload. Use fewer photos, a smaller GIF, or smaller JPG files (under ~3 MB total).",
       });
     }
     if (data.originalPrice != null && data.originalPrice <= data.price) {
@@ -104,6 +106,8 @@ export const upsertProduct = createServerFn({ method: "POST" })
       tag: data.tag ?? null,
       dimensions: data.dimensions?.trim() || null,
       weight: data.weight?.trim() || null,
+      gif: data.gif?.trim() || null,
+      personalizationPrompt: data.personalizationPrompt?.trim() || null,
       category: data.category,
       updatedAt: now,
     };

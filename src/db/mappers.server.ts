@@ -11,6 +11,7 @@ export type OrderItem = {
   price: number;
   image: string;
   color: string;
+  personalizationText?: string;
   quantity: number;
 };
 
@@ -40,6 +41,8 @@ export function toProduct(row: DbProduct): Product {
     tag: row.tag ?? undefined,
     dimensions: row.dimensions ?? undefined,
     weight: row.weight ?? undefined,
+    gif: row.gif ?? undefined,
+    personalizationPrompt: row.personalizationPrompt ?? undefined,
     category: isProductCategoryId(row.category) ? row.category : DEFAULT_PRODUCT_CATEGORY,
   };
 }
@@ -61,6 +64,7 @@ export function toOrder(row: DbOrder, items: DbOrderItem[]): Order {
       price: i.price,
       image: i.image,
       color: i.color,
+      personalizationText: i.personalizationText ?? undefined,
       quantity: i.quantity,
     })),
   };

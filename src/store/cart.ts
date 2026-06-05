@@ -8,8 +8,14 @@ export type CartItem = {
   price: number;
   image: string;
   color: string;
+  personalizationText?: string;
   quantity: number;
 };
+
+function cartLineId(item: Pick<CartItem, "productId" | "color" | "personalizationText">) {
+  const text = item.personalizationText?.trim() ?? "";
+  return text ? `${item.productId}-${item.color}-${text}` : `${item.productId}-${item.color}`;
+}
 
 type CartState = {
   items: CartItem[];
@@ -34,7 +40,7 @@ export const useCart = create<CartState>()(
       close: () => set({ isOpen: false }),
       toggle: () => set((s) => ({ isOpen: !s.isOpen })),
       addItem: (item) => {
-        const id = `${item.productId}-${item.color}`;
+        const id = cartLineId(item);
         set((s) => {
           const existing = s.items.find((i) => i.id === id);
           if (existing) {

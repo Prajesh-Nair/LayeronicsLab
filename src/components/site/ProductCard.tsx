@@ -25,16 +25,40 @@ export type Product = {
   dimensions?: string | null;
   /** e.g. "85 g" */
   weight?: string | null;
+  /** Optional small animated preview. */
+  gif?: string | null;
+  /** When set, customers must enter text before adding to cart. */
+  personalizationPrompt?: string | null;
   category: ProductCategoryId;
 };
 
 export function ProductCard({ product }: { product: Product }) {
   const addItem = useCart((s) => s.addItem);
   const [color, setColor] = useState(product.colors[0] ?? "#000");
+  const [personalizationText, setPersonalizationText] = useState("");
+  const requiresPersonalization = Boolean(product.personalizationPrompt?.trim());
 
   useEffect(() => {
     setColor(product.colors[0] ?? "#000");
+    setPersonalizationText("");
   }, [product.id, product.colors]);
+
+  const canAdd =
+    !requiresPersonalization || personalizationText.trim().length > 0;
+
+  const handleAdd = () => {
+    if (!canAdd) return;
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      color,
+      personalizationText: requiresPersonalization
+        ? personalizationText.trim()
+        : undefined,
+    });
+  };
 
   return (
     <article className="group bg-card rounded-3xl p-4 shadow-card hover:shadow-float hover:-translate-y-1 transition-smooth">
@@ -53,6 +77,14 @@ export function ProductCard({ product }: { product: Product }) {
           height={800}
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-smooth"
         />
+        {product.gif && (
+          <img
+            src={product.gif}
+            alt=""
+            aria-hidden
+            className="absolute bottom-3 right-3 z-10 w-14 h-14 rounded-xl border-2 border-card/90 shadow-glass object-cover bg-card/80 backdrop-blur"
+          />
+        )}
       </Link>
 
       <div className="pt-5 pb-2 px-1 space-y-3">
@@ -72,19 +104,38 @@ export function ProductCard({ product }: { product: Product }) {
           <ProductColorPicker colors={product.colors} value={color} onChange={setColor} size="sm" />
         </div>
 
+        {product.dimensions?.trim() && (
+          <div className="rounded-xl bg-[var(--color-surface)] px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Dimension (L × B × H)
+            </div>
+            <div className="text-xs font-medium text-foreground mt-0.5">{product.dimensions}</div>
+          </div>
+        )}
+
+        {requiresPersonalization && (
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold text-muted-foreground">
+              {product.personalizationPrompt}
+              <span className="text-primary"> *</span>
+            </span>
+            <input
+              type="text"
+              value={personalizationText}
+              onChange={(e) => setPersonalizationText(e.target.value)}
+              placeholder="Enter your text"
+              maxLength={80}
+              className="w-full h-9 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth"
+            />
+          </label>
+        )}
+
         <div className="flex gap-2 pt-2">
           <Button
             className="flex-1 rounded-full font-medium"
             size="sm"
-            onClick={() =>
-              addItem({
-                productId: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.image,
-                color,
-              })
-            }
+            disabled={!canAdd}
+            onClick={handleAdd}
           >
             <ShoppingCart className="w-4 h-4" />
             Add

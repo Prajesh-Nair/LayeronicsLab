@@ -52,6 +52,11 @@ export function CartDrawer() {
                   <span className="w-3 h-3 rounded-full border border-border" style={{ background: item.color }} />
                   Color
                 </div>
+                {item.personalizationText && (
+                  <p className="text-xs text-foreground mt-1 truncate" title={item.personalizationText}>
+                    Text: <span className="font-medium">{item.personalizationText}</span>
+                  </p>
+                )}
                 <div className="flex items-center justify-between mt-2">
                   <div className="inline-flex items-center rounded-full border border-border bg-background">
                     <button onClick={() => updateQty(item.id, item.quantity - 1)} className="w-7 h-7 grid place-items-center" aria-label="Decrease">

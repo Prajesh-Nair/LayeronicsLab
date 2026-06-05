@@ -10,9 +10,11 @@ import type { Product } from "@/components/site/ProductCard";
 import { adminPageTitle } from "@/lib/brand";
 import { DEFAULT_PRODUCT_CATEGORY, PRODUCT_CATEGORIES, getCategoryLabel } from "@/data/categories";
 import {
+  MAX_PRODUCT_GIF_BYTES,
   MAX_PRODUCT_IMAGE_BYTES,
   compressImageToDataUrl,
   estimateDataUrlBytes,
+  readGifToDataUrl,
 } from "@/lib/compress-image";
 import { formatInr, getDiscountPercent } from "@/lib/pricing";
 import { ProductPrice } from "@/components/site/ProductPrice";
@@ -33,6 +35,8 @@ const blank: Product = {
   colors: ["#22C55E"],
   dimensions: "",
   weight: "",
+  gif: "",
+  personalizationPrompt: "",
   category: DEFAULT_PRODUCT_CATEGORY,
 };
 
@@ -158,6 +162,7 @@ function ProductEditor({
   const [colorsInput, setColorsInput] = useState(() => product.colors.join(", "));
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const gifRef = useRef<HTMLInputElement>(null);
 
   const parseColors = (raw: string) =>
     raw
@@ -198,6 +203,21 @@ function ProductEditor({
     setP({ ...p, image: next[0] ?? "", images: next });
   };
 
+  const handleGif = async (files: FileList | null) => {
+    if (!files?.[0]) return;
+    setError(null);
+    try {
+      const dataUrl = await readGifToDataUrl(files[0]);
+      if (estimateDataUrlBytes([...images, dataUrl]) > MAX_PRODUCT_IMAGE_BYTES) {
+        setError("GIF plus images are too large. Remove a photo or use a smaller GIF.");
+        return;
+      }
+      setP({ ...p, gif: dataUrl });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not process GIF.");
+    }
+  };
+
   const submit = async () => {
     if (!p.name.trim()) return setError("Name is required.");
     if (images.length < 1) return setError("Please upload at least 1 image.");
@@ -208,9 +228,10 @@ function ProductEditor({
     if (p.originalPrice != null && p.originalPrice > 0 && p.originalPrice <= p.price) {
       return setError("Original price must be higher than the selling price.");
     }
-    if (estimateDataUrlBytes(images) > MAX_PRODUCT_IMAGE_BYTES) {
+    const mediaBytes = estimateDataUrlBytes(images) + (p.gif?.length ?? 0);
+    if (mediaBytes > MAX_PRODUCT_IMAGE_BYTES) {
       return setError(
-        "Images are too large for the server (Vercel limit). Use fewer or smaller JPGs — they are compressed on upload after you redeploy.",
+        "Images are too large for the server (Vercel limit). Use fewer or smaller JPGs/GIF — they are compressed on upload after you redeploy.",
       );
     }
     setError(null);
@@ -276,7 +297,15 @@ function ProductEditor({
             <span className="text-sm font-semibold">Category</span>
             <select
               value={p.category}
-              onChange={(e) => setP({ ...p, category: e.target.value as Product["category"] })}
+              onChange={(e) => {
+                const category = e.target.value as Product["category"];
+                setP({
+                  ...p,
+                  category,
+                  personalizationPrompt:
+                    category === "customized-print" ? p.personalizationPrompt : "",
+                });
+              }}
               className="mt-1.5 w-full h-11 rounded-xl border border-border bg-background px-4 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth"
             >
               {PRODUCT_CATEGORIES.map((c) => (
@@ -286,6 +315,59 @@ function ProductEditor({
               ))}
             </select>
           </label>
+
+          {p.category === "customized-print" && (
+            <Input
+              label="Personalization prompt (optional)"
+              value={p.personalizationPrompt ?? ""}
+              onChange={(v) => setP({ ...p, personalizationPrompt: v })}
+              placeholder="e.g. Name to print on the item"
+            />
+          )}
+          {p.category === "customized-print" && p.personalizationPrompt?.trim() && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              Customers must enter this text before they can add the product to cart.
+            </p>
+          )}
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-semibold">Preview GIF (optional, max {Math.round(MAX_PRODUCT_GIF_BYTES / 1000)} KB)</span>
+            </div>
+            <input
+              ref={gifRef}
+              type="file"
+              accept="image/gif,.gif"
+              hidden
+              onChange={(e) => {
+                void handleGif(e.target.files);
+                if (gifRef.current) gifRef.current.value = "";
+              }}
+            />
+            {p.gif ? (
+              <div className="flex items-center gap-3">
+                <img src={p.gif} alt="" className="w-16 h-16 rounded-xl border border-border object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setP({ ...p, gif: "" })}
+                  className="text-sm text-destructive hover:underline"
+                >
+                  Remove GIF
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => gifRef.current?.click()}
+                className="w-full h-16 rounded-2xl border-2 border-dashed border-border hover:border-primary hover:bg-muted/50 transition-smooth grid place-items-center text-sm text-muted-foreground"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Upload a small GIF preview
+                </span>
+              </button>
+            )}
+          </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">

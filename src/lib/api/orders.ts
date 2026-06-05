@@ -45,6 +45,7 @@ const cartItemSchema = z.object({
   price: z.number().nonnegative(),
   image: z.string(),
   color: z.string(),
+  personalizationText: z.string().optional(),
   quantity: z.number().int().positive(),
 });
 
@@ -92,6 +93,7 @@ export const createOrder = createServerFn({ method: "POST" })
             catalogImages.get(item.productId),
           ),
           color: item.color,
+          personalizationText: item.personalizationText?.trim() || null,
           quantity: item.quantity,
         })),
       );
