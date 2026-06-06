@@ -1,11 +1,34 @@
 import { count, eq } from "drizzle-orm";
 
-import { SEED_PRODUCT_CATEGORIES } from "@/data/categories";
+import { CATEGORY_SEED, SEED_PRODUCT_CATEGORIES } from "@/data/categories";
 import { products as seedProducts } from "@/data/products";
 import { getDb } from "./client.server";
-import { products } from "./schema";
+import { categories, products } from "./schema";
 
 let seeded = false;
+let categoriesSeeded = false;
+
+/** Inserts default category rows when the categories table is empty. */
+export async function ensureCategorySeed() {
+  if (categoriesSeeded) return;
+  const db = getDb();
+  const [{ value }] = await db.select({ value: count() }).from(categories);
+  if (value === 0) {
+    const now = new Date();
+    await db.insert(categories).values(
+      CATEGORY_SEED.map((c) => ({
+        id: c.id,
+        label: c.label,
+        description: c.description,
+        sortOrder: c.sortOrder,
+        allowsPersonalization: c.allowsPersonalization,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    );
+  }
+  categoriesSeeded = true;
+}
 
 async function backfillSeedCategories() {
   const db = getDb();
@@ -16,6 +39,7 @@ async function backfillSeedCategories() {
 
 /** Inserts catalog seed rows when the products table is empty. */
 export async function ensureProductSeed() {
+  await ensureCategorySeed();
   if (seeded) return;
   const db = getDb();
   const [{ value }] = await db.select({ value: count() }).from(products);

@@ -1,9 +1,13 @@
 import { ProductCard } from "./ProductCard";
-import { PRODUCT_CATEGORIES } from "@/data/categories";
+import { useCategories } from "@/hooks/use-categories";
 import { useProducts } from "@/hooks/use-products";
 
 export function CategoryCatalog() {
-  const { data: products = [], isLoading, isError } = useProducts();
+  const { data: products = [], isLoading: productsLoading, isError: productsError } = useProducts();
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useCategories();
+
+  const isLoading = productsLoading || categoriesLoading;
+  const isError = productsError || categoriesError;
 
   return (
     <section id="categories" className="bg-background scroll-mt-28">
@@ -25,7 +29,7 @@ export function CategoryCatalog() {
 
         {!isLoading && !isError && (
           <div className="space-y-20 sm:space-y-24">
-            {PRODUCT_CATEGORIES.map((category) => {
+            {categories.map((category) => {
               const items = products.filter((p) => p.category === category.id);
               return (
                 <div key={category.id} id={`category-${category.id}`} className="scroll-mt-28">

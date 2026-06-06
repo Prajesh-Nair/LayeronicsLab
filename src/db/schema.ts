@@ -1,4 +1,15 @@
-import { integer, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, real, text, timestamp } from "drizzle-orm/pg-core";
+
+export const categories = pgTable("categories", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  description: text("description").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  /** When true, products in this category can ask customers for personalized text. */
+  allowsPersonalization: boolean("allows_personalization").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const products = pgTable("products", {
   id: text("id").primaryKey(),
@@ -49,6 +60,7 @@ export const orderItems = pgTable("order_items", {
   quantity: integer("quantity").notNull(),
 });
 
+export type DbCategory = typeof categories.$inferSelect;
 export type DbProduct = typeof products.$inferSelect;
 export type DbOrder = typeof orders.$inferSelect;
 export type DbOrderItem = typeof orderItems.$inferSelect;

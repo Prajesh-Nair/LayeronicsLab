@@ -4,11 +4,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Pencil, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { useCategories } from "@/hooks/use-categories";
 import { productsQueryKey, useProducts } from "@/hooks/use-products";
 import { deleteProduct, upsertProduct } from "@/lib/api/products";
 import type { Product } from "@/components/site/ProductCard";
 import { adminPageTitle } from "@/lib/brand";
-import { DEFAULT_PRODUCT_CATEGORY, PRODUCT_CATEGORIES, getCategoryLabel } from "@/data/categories";
+import { DEFAULT_PRODUCT_CATEGORY, getCategoryLabel, type ProductCategory } from "@/data/categories";
 import {
   MAX_PRODUCT_GIF_BYTES,
   MAX_PRODUCT_IMAGE_BYTES,
@@ -43,6 +44,7 @@ const blank: Product = {
 function AdminProducts() {
   const queryClient = useQueryClient();
   const { data: products = [], isLoading, isError } = useProducts();
+  const { data: categories = [] } = useCategories();
   const [editing, setEditing] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +71,13 @@ function AdminProducts() {
   return (
     <AdminLayout title="Products">
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setEditing({ ...blank })} className="rounded-full font-semibold" disabled={saving}>
+        <Button
+          onClick={() =>
+            setEditing({ ...blank, category: categories[0]?.id ?? DEFAULT_PRODUCT_CATEGORY })
+          }
+          className="rounded-full font-semibold"
+          disabled={saving}
+        >
           <Plus className="w-4 h-4" /> Add product
         </Button>
       </div>
@@ -102,7 +110,9 @@ function AdminProducts() {
                 <td className="px-5 py-4">
                   <ProductPrice price={p.price} originalPrice={p.originalPrice} size="sm" align="left" />
                 </td>
-                <td className="px-5 py-4 hidden lg:table-cell text-muted-foreground">{getCategoryLabel(p.category)}</td>
+                <td className="px-5 py-4 hidden lg:table-cell text-muted-foreground">
+                  {getCategoryLabel(p.category, categories)}
+                </td>
                 <td className="px-5 py-4 hidden md:table-cell">
                   <div className="flex gap-1">
                     {p.colors.slice(0, 5).map((c) => (
@@ -138,6 +148,7 @@ function AdminProducts() {
         <ProductEditor
           key={editing.id || "new"}
           product={editing}
+          categories={categories}
           saving={saving}
           onClose={() => setEditing(null)}
           onSave={save}
@@ -149,16 +160,20 @@ function AdminProducts() {
 
 function ProductEditor({
   product,
+  categories,
   saving,
   onClose,
   onSave,
 }: {
   product: Product;
+  categories: ProductCategory[];
   saving: boolean;
   onClose: () => void;
   onSave: (p: Product) => void | Promise<void>;
 }) {
   const [p, setP] = useState<Product>(product);
+  const selectedCategory = categories?.find((c) => c.id === p.category);
+  const allowsPersonalization = selectedCategory?.allowsPersonalization ?? false;
   const [colorsInput, setColorsInput] = useState(() => product.colors.join(", "));
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -298,17 +313,17 @@ function ProductEditor({
             <select
               value={p.category}
               onChange={(e) => {
-                const category = e.target.value as Product["category"];
+                const category = e.target.value;
+                const nextCategory = categories?.find((c) => c.id === category);
                 setP({
                   ...p,
                   category,
-                  personalizationPrompt:
-                    category === "customized-print" ? p.personalizationPrompt : "",
+                  personalizationPrompt: nextCategory?.allowsPersonalization ? p.personalizationPrompt : "",
                 });
               }}
               className="mt-1.5 w-full h-11 rounded-xl border border-border bg-background px-4 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth"
             >
-              {PRODUCT_CATEGORIES.map((c) => (
+              {(categories ?? []).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>
@@ -316,7 +331,7 @@ function ProductEditor({
             </select>
           </label>
 
-          {p.category === "customized-print" && (
+          {allowsPersonalization && (
             <Input
               label="Personalization prompt (optional)"
               value={p.personalizationPrompt ?? ""}
@@ -324,7 +339,7 @@ function ProductEditor({
               placeholder="e.g. Name to print on the item"
             />
           )}
-          {p.category === "customized-print" && p.personalizationPrompt?.trim() && (
+          {allowsPersonalization && p.personalizationPrompt?.trim() && (
             <p className="text-xs text-muted-foreground -mt-2">
               Customers must enter this text before they can add the product to cart.
             </p>

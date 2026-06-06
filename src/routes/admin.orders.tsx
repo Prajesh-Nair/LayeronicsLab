@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { adminPageTitle } from "@/lib/brand";
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { Button } from "@/components/ui/button";
 import type { Order, OrderStatus } from "@/db/mappers.server";
-import { useAdminOrders, useUpdateOrderStatus } from "@/hooks/use-orders";
+import { useAdminOrders, useDeleteOrder, useUpdateOrderStatus } from "@/hooks/use-orders";
 import { useAdmin } from "@/store/admin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -25,10 +27,23 @@ function AdminOrders() {
   const authed = useAdmin((s) => s.authed);
   const { data: orders = [], isLoading, isError } = useAdminOrders(authed);
   const updateStatus = useUpdateOrderStatus();
+  const deleteOrderMutation = useDeleteOrder();
   const [selected, setSelected] = useState<Order | null>(null);
 
   const setStatus = (id: string, status: OrderStatus) => {
     updateStatus.mutate({ id, status });
+  };
+
+  const remove = (order: Order) => {
+    if (!confirm(`Delete order ${order.id}? This cannot be undone.`)) return;
+    deleteOrderMutation.mutate(order.id, {
+      onSuccess: () => {
+        if (selected?.id === order.id) setSelected(null);
+      },
+      onError: (err) => {
+        alert(err instanceof Error ? err.message : "Could not delete order.");
+      },
+    });
   };
 
   return (
@@ -47,12 +62,13 @@ function AdminOrders() {
                 <th className="text-left font-semibold px-5 py-4">Total</th>
                 <th className="text-left font-semibold px-5 py-4">Created</th>
                 <th className="text-left font-semibold px-5 py-4">Status</th>
+                <th className="text-right font-semibold px-5 py-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {orders.length === 0 && !isLoading && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
                     No orders yet.
                   </td>
                 </tr>
@@ -99,6 +115,18 @@ function AdminOrders() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => remove(o)}
+                        disabled={deleteOrderMutation.isPending}
+                        className="w-9 h-9 grid place-items-center rounded-xl border border-border text-destructive hover:bg-destructive/10 transition-smooth disabled:opacity-50"
+                        aria-label={`Delete order ${o.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -171,6 +199,18 @@ function AdminOrders() {
               <div className="flex items-center justify-between border-t border-border pt-4">
                 <span className="text-sm text-muted-foreground">Total</span>
                 <span className="text-lg font-bold">₹{selected.total.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-border mt-4">
+                <Button
+                  variant="outline"
+                  className="rounded-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                  disabled={deleteOrderMutation.isPending}
+                  onClick={() => remove(selected)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteOrderMutation.isPending ? "Deleting…" : "Delete order"}
+                </Button>
               </div>
             </>
           )}

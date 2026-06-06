@@ -141,6 +141,18 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const deleteOrder = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    try {
+      await requireAdmin();
+      await getDb().delete(orders).where(eq(orders.id, data.id));
+      return { ok: true as const };
+    } catch (err) {
+      rethrowOrderError(err);
+    }
+  });
+
 export const trackOrdersByEmail = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email() }))
   .handler(async ({ data }) => {

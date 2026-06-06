@@ -1,5 +1,5 @@
 import type { Product } from "@/components/site/ProductCard";
-import { DEFAULT_PRODUCT_CATEGORY, isProductCategoryId } from "@/data/categories";
+import { DEFAULT_PRODUCT_CATEGORY } from "@/data/categories";
 import type { DbOrder, DbOrderItem, DbProduct } from "./schema";
 
 export type OrderStatus = "new" | "contacted" | "printing" | "shipped" | "done";
@@ -43,7 +43,7 @@ export function toProduct(row: DbProduct): Product {
     weight: row.weight ?? undefined,
     gif: row.gif ?? undefined,
     personalizationPrompt: row.personalizationPrompt ?? undefined,
-    category: isProductCategoryId(row.category) ? row.category : DEFAULT_PRODUCT_CATEGORY,
+    category: row.category?.trim() || DEFAULT_PRODUCT_CATEGORY,
   };
 }
 

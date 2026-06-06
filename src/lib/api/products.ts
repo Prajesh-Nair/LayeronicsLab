@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { getDb } from "@/db/client.server";
 import { toProduct } from "@/db/mappers.server";
-import { ensureProductSeed } from "@/db/seed.server";
-import { products } from "@/db/schema";
+import { ensureCategorySeed, ensureProductSeed } from "@/db/seed.server";
+import { categories, products } from "@/db/schema";
 import { DEFAULT_PRODUCT_CATEGORY } from "@/data/categories";
 import { requireAdmin } from "@/lib/auth/admin.server";
 
@@ -24,9 +24,7 @@ const productInput = z
     weight: z.string().optional(),
     gif: z.string().optional(),
     personalizationPrompt: z.string().optional(),
-    category: z
-      .enum(["sculptures", "customized-print", "useful-items"])
-      .default(DEFAULT_PRODUCT_CATEGORY),
+    category: z.string().min(1).default(DEFAULT_PRODUCT_CATEGORY),
   })
   .superRefine((data, ctx) => {
     const imgs = data.images?.length ? data.images : [data.image];
@@ -92,6 +90,18 @@ export const upsertProduct = createServerFn({ method: "POST" })
       }
       throw err;
     }
+
+    await ensureCategorySeed();
+    const db = getDb();
+    const [categoryRow] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.id, data.category))
+      .limit(1);
+    if (!categoryRow) {
+      throw new Error("Choose a valid category. Create one under Admin → Categories if needed.");
+    }
+
     const images = data.images?.length ? data.images : [data.image];
     const now = new Date();
     const values = {
@@ -113,7 +123,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
     };
 
     try {
-      await getDb()
+      await db
         .insert(products)
         .values({ ...values, createdAt: now })
         .onConflictDoUpdate({
@@ -121,7 +131,7 @@ export const upsertProduct = createServerFn({ method: "POST" })
           set: values,
         });
 
-      const [row] = await getDb().select().from(products).where(eq(products.id, data.id)).limit(1);
+      const [row] = await db.select().from(products).where(eq(products.id, data.id)).limit(1);
       if (!row) throw new Error("Failed to save product");
       return toProduct(row);
     } catch (err) {
