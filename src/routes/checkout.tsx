@@ -171,7 +171,7 @@ function Checkout() {
               {items.length === 0 && <p className="text-sm text-muted-foreground">Your cart is empty.</p>}
               {items.map((i) => (
                 <div key={i.id} className="flex gap-3">
-                  <img src={i.image} alt={i.name} className="w-14 h-14 rounded-xl object-cover bg-[var(--color-surface)]" />
+                  <img src={i.image} alt={i.name} className="w-14 h-14 rounded-xl object-contain bg-black" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{i.name}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-1.5">

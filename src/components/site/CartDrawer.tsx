@@ -40,7 +40,7 @@ export function CartDrawer() {
           )}
           {items.map((item) => (
             <div key={item.id} className="flex gap-3 p-3 rounded-2xl bg-[var(--color-surface)]">
-              <img src={item.image} alt={item.name} className="w-20 h-20 rounded-xl object-cover bg-muted" />
+              <img src={item.image} alt={item.name} className="w-20 h-20 rounded-xl object-contain bg-black" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold text-sm leading-tight truncate">{item.name}</h3>

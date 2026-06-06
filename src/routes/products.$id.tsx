@@ -75,13 +75,13 @@ function ProductDetail() {
 
       <section className="mx-auto max-w-[1400px] px-4 sm:px-10 pb-16 grid lg:grid-cols-2 gap-10 lg:gap-16">
         <div className="space-y-4">
-          <div className="relative rounded-[32px] overflow-hidden bg-[var(--color-surface)] aspect-square shadow-card">
+          <div className="relative rounded-[32px] overflow-hidden bg-black aspect-square shadow-card">
             <ProductDiscountBadge
               price={product.price}
               originalPrice={product.originalPrice}
               className="top-4 right-4 text-xs"
             />
-            <img src={gallery[activeImg]} alt={product.name} className="w-full h-full object-cover" width={1024} height={1024} />
+            <img src={gallery[activeImg]} alt={product.name} className="w-full h-full object-contain" width={1024} height={1024} />
             {product.gif && (
               <img
                 src={product.gif}
@@ -96,9 +96,9 @@ function ProductDetail() {
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
-                className={`rounded-2xl overflow-hidden aspect-square bg-[var(--color-surface)] border-2 transition-smooth ${i === activeImg ? "border-primary" : "border-transparent hover:border-border"}`}
+                className={`rounded-2xl overflow-hidden aspect-square bg-black border-2 transition-smooth ${i === activeImg ? "border-primary" : "border-transparent hover:border-border"}`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <img src={img} alt="" className="w-full h-full object-contain" />
               </button>
             ))}
           </div>
@@ -191,7 +191,7 @@ function ProductDetail() {
 
       <section className="mx-auto max-w-[1400px] px-4 sm:px-10 pb-24">
         <h2 className="text-2xl font-bold mb-8">You may also like</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {related.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
