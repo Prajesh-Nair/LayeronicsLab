@@ -84,7 +84,8 @@ function AdminCategories() {
       {isError && <p className="text-destructive mb-4">Could not load categories.</p>}
 
       <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-[var(--color-surface)] text-muted-foreground">
             <tr>
               <th className="text-left font-semibold px-5 py-4">Name</th>
@@ -134,6 +135,7 @@ function AdminCategories() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {editing && (

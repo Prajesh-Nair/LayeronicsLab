@@ -53,7 +53,7 @@ function AdminOrders() {
 
       <div className="bg-card rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-[var(--color-surface)] text-muted-foreground">
               <tr>
                 <th className="text-left font-semibold px-5 py-4">Order</th>

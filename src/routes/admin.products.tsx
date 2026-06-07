@@ -86,7 +86,8 @@ function AdminProducts() {
       {isError && <p className="text-destructive mb-4">Could not load products.</p>}
 
       <div className="bg-card rounded-2xl shadow-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-[var(--color-surface)] text-muted-foreground">
             <tr>
               <th className="text-left font-semibold px-5 py-4">Product</th>
@@ -142,6 +143,7 @@ function AdminProducts() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {editing && (
