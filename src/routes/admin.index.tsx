@@ -52,6 +52,7 @@ function AdminDashboard() {
               <div className="min-w-0">
                 <div className="font-mono text-sm font-semibold">{o.id}</div>
                 <div className="text-xs text-muted-foreground truncate">
+                  {o.name ? `${o.name} · ` : ""}
                   {o.email} · {o.items.length} item(s)
                 </div>
               </div>

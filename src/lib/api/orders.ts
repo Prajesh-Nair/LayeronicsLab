@@ -52,6 +52,7 @@ const cartItemSchema = z.object({
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
+      name: z.string().trim().min(1, "Name is required"),
       email: z.string().email(),
       phone: z.string().min(10),
       pincode: z.string().regex(/^\d{6}$/, "Enter a valid 6-digit delivery pincode"),
@@ -67,6 +68,7 @@ export const createOrder = createServerFn({ method: "POST" })
 
       await db.insert(orders).values({
         id,
+        name: data.name.trim(),
         email: data.email.toLowerCase(),
         phone: data.phone,
         pincode: data.pincode,

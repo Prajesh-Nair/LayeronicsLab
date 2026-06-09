@@ -22,6 +22,7 @@ export const Route = createFileRoute("/checkout")({
 function Checkout() {
   const navigate = useNavigate();
   const { items, subtotal, clear } = useCart();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [pincode, setPincode] = useState("");
@@ -31,6 +32,10 @@ function Checkout() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
     if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ""))) {
       setError("Please enter a valid phone number (10+ digits, optional + prefix)");
       return;
@@ -45,6 +50,7 @@ function Checkout() {
     try {
       const result = await createOrder({
         data: {
+          name: name.trim(),
           email,
           phone,
           pincode,
@@ -103,6 +109,18 @@ function Checkout() {
             </div>
 
             <form onSubmit={submit} className="mt-8 space-y-5">
+              <Field label="Full name" required>
+                <input
+                  required
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  autoComplete="name"
+                  disabled={submitting}
+                  className="w-full h-14 rounded-2xl border border-border bg-background px-5 text-base outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition-smooth disabled:opacity-60"
+                />
+              </Field>
               <Field label="Email address" required>
                 <input
                   required

@@ -17,6 +17,7 @@ export type OrderItem = {
 
 export type Order = {
   id: string;
+  name: string;
   email: string;
   phone: string;
   pincode: string;
@@ -50,6 +51,7 @@ export function toProduct(row: DbProduct): Product {
 export function toOrder(row: DbOrder, items: DbOrderItem[]): Order {
   return {
     id: row.id,
+    name: row.name ?? "",
     email: row.email,
     phone: row.phone,
     pincode: row.pincode ?? "",

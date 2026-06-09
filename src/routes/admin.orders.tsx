@@ -84,7 +84,8 @@ function AdminOrders() {
                     </button>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="font-medium">{o.email}</div>
+                    {o.name && <div className="font-medium">{o.name}</div>}
+                    <div className={o.name ? "text-xs text-muted-foreground" : "font-medium"}>{o.email}</div>
                     <div className="text-xs text-muted-foreground">{o.phone}</div>
                     {o.pincode && <div className="text-xs text-muted-foreground font-mono">PIN {o.pincode}</div>}
                   </td>
@@ -148,6 +149,12 @@ function AdminOrders() {
               </DialogHeader>
 
               <div className="grid grid-cols-2 gap-4 text-sm py-2">
+                {selected.name && (
+                  <div className="col-span-2">
+                    <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Name</div>
+                    <div className="font-medium">{selected.name}</div>
+                  </div>
+                )}
                 <div>
                   <div className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Email</div>
                   <div className="font-medium">{selected.email}</div>

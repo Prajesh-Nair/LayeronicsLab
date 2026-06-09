@@ -37,6 +37,7 @@ export const products = pgTable("products", {
 
 export const orders = pgTable("orders", {
   id: text("id").primaryKey(),
+  name: text("name").notNull().default(""),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   pincode: text("pincode"),
